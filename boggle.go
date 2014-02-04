@@ -2,24 +2,38 @@ package main
 
 import (
 	"fmt"
-	"hillmanov/boggle/board"
-	"hillmanov/boggle/dictionary"
-	"hillmanov/boggle/word"
+	"github.com/hillmanov/go-boggle/board"
+	"github.com/hillmanov/go-boggle/dictionary"
+	"github.com/hillmanov/go-boggle/word"
 )
 
 var d = dictionary.New()
 var b = board.New([]string{"b", "e", "r", "t", "g", "h", "n", "m", "a", "e", "w", "p", "l", "e", "t", "f"})
 var minWordLength int = 3
 var foundWords = make(map[string]bool)
+var numberOfChan = 0
+var doneChan = make(chan int)
 
 func main() {
 	for row := 0; row < b.Size(); row++ {
 		for col := 0; col < b.Size(); col++ {
-			findWords(word.New(b.Letter(row, col), row, col), row, col)
+			numberOfChan += 1
+			go startFinding(word.New(b.Letter(row, col), row, col), row, col, doneChan)
 		}
 	}
-	fmt.Println("Home many words", len(foundWords))
+
+	for i := 0; i < numberOfChan; i++ {
+		<-doneChan
+	}
+
+	fmt.Println("Home many words NOW", len(foundWords))
 }
+
+func startFinding(w *word.Word, row, col int, doneChan chan <- int) {
+	findWords(w, row, col)
+	doneChan <- 1
+}
+
 
 func findWords(w *word.Word, row, col int) {
 	if isValidWord(w.Word()) {
